@@ -1,21 +1,17 @@
-/**
- * Block Registry for {{APP_NAME}}
- *
- * This file exports all blocks as a dictionary for easy registration.
- *
- * Usage in main.ts:
- *   import { blocks } from "./blocks/index.ts";
- *   export const app: App = {
- *     blocks: Object.values(blocks)
- *   };
- *
- * Adding new blocks:
- * 1. Create your block file (e.g., myBlock.ts)
- * 2. Import and add it to the blocks dictionary below
- * 3. Export it for type safety and external use
- */
-
-import { exampleBlock } from "./exampleBlock";
+import { stack } from "./cloudformation/stack";
+import { table } from "./dynamodb/table";
+import { vpc } from "./ec2/vpc";
+import { bucket } from "./s3/bucket";
+import { bucketpolicy } from "./s3/bucketpolicy";
+import { topic } from "./sns/topic";
+import { secret } from "./secretsmanager/secret";
+import { topicpolicy } from "./sns/topicpolicy";
+import { topicinlinepolicy } from "./sns/topicinlinepolicy";
+import { queue } from "./sqs/queue";
+import { queuepolicy } from "./sqs/queuepolicy";
+import { queueinlinepolicy } from "./sqs/queueinlinepolicy";
+import { parameter } from "./ssm/parameter";
+import { genericResource } from "./genericResource";
 
 /**
  * Dictionary of all available blocks
@@ -23,10 +19,18 @@ import { exampleBlock } from "./exampleBlock";
  * Value: block definition
  */
 export const blocks = {
-  example: exampleBlock,
-  // Add more blocks here:
-  // myNewBlock: myNewBlock,
+  cloudformationStack: stack,
+  dynamodbTable: table,
+  ec2Vpc: vpc,
+  s3Bucket: bucket,
+  s3Bucketpolicy: bucketpolicy,
+  snsTopic: topic,
+  secretsmanagerSecret: secret,
+  snsTopicpolicy: topicpolicy,
+  snsTopicinlinepolicy: topicinlinepolicy,
+  sqsQueue: queue,
+  sqsQueuepolicy: queuepolicy,
+  sqsQueueinlinepolicy: queueinlinepolicy,
+  ssmParameter: parameter,
+  genericResource: genericResource,
 } as const;
-
-// Named exports for individual blocks (optional, for external imports)
-export { exampleBlock };

@@ -1,0 +1,76 @@
+{
+  "AWS::CloudFormation::Stack": {
+    "fieldNames": {
+      "NotificationARNs": "Notification ARNs",
+      "RoleARN": "Role ARN",
+      "StackPolicyURL": "Stack Policy URL",
+      "TemplateURL": "Template URL"
+    }
+  },
+  "AWS::DynamoDB::Table": {
+    "fieldNames": {
+      "SSESpecification": "SSE Specification"
+    }
+  },
+  "AWS::EC2::VPC": {
+    "fieldNames": {
+      "CidrBlock": "CIDR Block",
+      "EnableDnsHostnames": "Enable DNS Hostnames",
+      "EnableDnsSupport": "Enable DNS Support",
+      "Ipv4IpamPoolId": "IPv4 IPAM Pool ID",
+      "Ipv4NetmaskLength": "IPv4 Netmask Length",
+      "Ipv6CidrBlocks": "IPv6 CIDR Blocks",
+      "CidrBlockAssociations": "CIDR Block Associations",
+      "VpcId": "VPC ID"
+    }
+  },
+  "AWS::S3::Bucket": {
+    "fieldNames": {}
+  },
+  "AWS::S3::BucketPolicy": {
+    "blockName": "S3 Bucket Policy",
+    "fieldNames": {}
+  },
+  "AWS::SNS::Topic": {
+    "fieldNames": {
+      "FifoTopic": "FIFO Topic",
+      "FifoThroughputScope": "FIFO Throughput Scope",
+      "KmsMasterKeyId": "KMS Master Key ID",
+      "SqsManagedSseEnabled": "SQS Managed SSE Enabled"
+    }
+  },
+  "AWS::SecretsManager::Secret": {
+    "fieldNames": {
+      "KmsKeyId": "KMS Key ID"
+    }
+  },
+  "AWS::SNS::TopicPolicy": {
+    "blockName": "SNS Topic Policy",
+    "fieldNames": {}
+  },
+  "AWS::SNS::TopicInlinePolicy": {
+    "blockName": "SNS Topic Inline Policy",
+    "fieldNames": {
+      "TopicArn": "Topic ARN"
+    }
+  },
+  "AWS::SQS::Queue": {
+    "fieldNames": {
+      "FifoQueue": "FIFO Queue",
+      "FifoThroughputScope": "FIFO Throughput Scope",
+      "KmsMasterKeyId": "KMS Master Key ID",
+      "KmsDataKeyReusePeriodSeconds": "KMS Data Key Reuse Period Seconds"
+    }
+  },
+  "AWS::SQS::QueuePolicy": {
+    "blockName": "SQS Queue Policy",
+    "fieldNames": {}
+  },
+  "AWS::SQS::QueueInlinePolicy": {
+    "blockName": "SQS Queue Inline Policy",
+    "fieldNames": {}
+  },
+  "AWS::SSM::Parameter": {
+    "fieldNames": {}
+  }
+}
