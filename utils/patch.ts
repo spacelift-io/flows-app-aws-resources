@@ -8,22 +8,24 @@ interface PatchOperation {
  * Generates a JSON Patch document (RFC 6902) by comparing two objects.
  * Only includes operations for properties that have actually changed.
  *
- * @param oldObj The original object
- * @param newObj The updated object
+ * @param oldObj The original object (current AWS state)
+ * @param newObj The updated object (desired config state)
  * @param readOnlyKeys Optional array of keys to exclude from patch operations
+ * @param userConfigKeys Optional array of keys that user explicitly configured (prevents patching auto-generated values)
  * @returns Array of patch operations
  */
 export function generateJsonPatch(
   oldObj: Record<string, any>,
   newObj: Record<string, any>,
   readOnlyKeys?: string[],
+  userConfigKeys?: string[],
 ): PatchOperation[] {
   const operations: PatchOperation[] = [];
 
-  // Get all unique keys from both objects
+  // Only consider keys that are either in the desired config or explicitly configured by user
   const allKeys = new Set([
-    ...Object.keys(oldObj || {}),
-    ...Object.keys(newObj || {}),
+    ...Object.keys(newObj || {}), // Properties user wants
+    ...(userConfigKeys || []), // Properties user explicitly configured (even if now undefined)
   ]);
 
   for (const key of allKeys) {
@@ -35,8 +37,12 @@ export function generateJsonPatch(
     const oldValue = oldObj?.[key];
     const newValue = newObj?.[key];
 
-    // Property was removed
-    if (oldValue !== undefined && newValue === undefined) {
+    // Property was removed (only if user had explicitly set it before)
+    if (
+      oldValue !== undefined &&
+      newValue === undefined &&
+      userConfigKeys?.includes(key)
+    ) {
       operations.push({
         op: "remove",
         path: `/${key}`,
