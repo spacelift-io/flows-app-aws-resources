@@ -11,7 +11,8 @@ import { queue } from "./sqs/queue";
 import { queuepolicy } from "./sqs/queuepolicy";
 import { queueinlinepolicy } from "./sqs/queueinlinepolicy";
 import { parameter } from "./ssm/parameter";
-import { genericResource } from "./genericResource";
+import { resource } from "./generic/resource";
+import { dataSource } from "./generic/dataSource";
 
 /**
  * Dictionary of all available blocks
@@ -32,5 +33,6 @@ export const blocks = {
   sqsQueuepolicy: queuepolicy,
   sqsQueueinlinepolicy: queueinlinepolicy,
   ssmParameter: parameter,
-  genericResource: genericResource,
+  resource,
+  dataSource,
 } as const;

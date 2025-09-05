@@ -1,5 +1,4 @@
-import { AppBlock, AppBlockSignal, AppConfigField } from "@slflows/sdk/v1";
-import { configAsSignals } from "./configAsSignal";
+import { AppBlock, AppConfigField } from "@slflows/sdk/v1";
 import { createCloudControlHandlers } from "./cloudControl";
 
 interface ResourceOverrides {
@@ -130,9 +129,8 @@ export function buildBlock(
   const description =
     overrides.description || schema.description || `AWS ${typeName} resource`;
 
-  // Build config (writable properties)
+  // Build config (writable properties only)
   const config: Record<string, AppConfigField> = {};
-  const readOnlyProperties: Record<string, AppBlockSignal> = {};
 
   // Sort properties to put required ones first
   const sortedProperties = Object.entries(schema.properties).sort(
@@ -160,13 +158,8 @@ export function buildBlock(
       (overrides.fieldNames || {})[propName] || inferDisplayName(propName);
     const required = (schema.required || []).includes(propName);
 
-    if (isReadOnly) {
-      readOnlyProperties[propName] = {
-        name: displayName,
-        description: propSchema.description || "",
-        sensitive: isWriteOnly,
-      };
-    } else {
+    // Only include writable properties in config
+    if (!isReadOnly) {
       config[propName] = {
         name: displayName,
         description: propSchema.description || "",
@@ -178,17 +171,40 @@ export function buildBlock(
     }
   }
 
-  // Create handlers
-  const { onSync, onDrain } = createCloudControlHandlers(
-    typeName,
-    Object.keys(readOnlyProperties),
+  // Extract read-only and create-only property keys for handlers
+  const readOnlyPropertyKeys = (schema.readOnlyProperties || []).map(
+    (prop: string) => prop.replace("/properties/", ""),
   );
+  const createOnlyPropertyKeys = (schema.createOnlyProperties || []).map(
+    (prop: string) => prop.replace("/properties/", ""),
+  );
+
+  // Create handlers
+  const { onSync, onDrain } = createCloudControlHandlers({
+    typeName,
+    getDesiredState: (config) => {
+      const { region, reconcileOnDrift, ...desiredState } = config;
+      return desiredState;
+    },
+    getNonUpdatableProperties: [
+      ...readOnlyPropertyKeys,
+      ...createOnlyPropertyKeys,
+    ],
+  });
 
   return {
     name,
     description,
     category,
     config: {
+      reconcileOnDrift: {
+        name: "Reconcile on Drift",
+        description:
+          "When enabled, automatically corrects resource drift by updating AWS resources to match desired configuration. When disabled, drift is detected and reported but resources are not automatically updated.",
+        type: "boolean",
+        required: true,
+        default: true,
+      },
       region: {
         name: "Region",
         description: "The AWS region for provisioning the resource.",
@@ -196,21 +212,21 @@ export function buildBlock(
         required: true,
         fixed: true,
       },
-      ...config,
+      ...Object.fromEntries(
+        Object.entries(config).sort(([, a], [, b]) => {
+          // Required fields first, then alphabetical
+          if (a.required && !b.required) return -1;
+          if (!a.required && b.required) return 1;
+          return 0;
+        }),
+      ),
     },
     onSync,
     onDrain,
     signals: {
-      ...configAsSignals(config),
-      ...readOnlyProperties,
-      configHash: {
-        name: "Config Hash",
-        description:
-          "The hash of the configuration for the AWS resource, used to detect changes",
-      },
-      requestToken: {
-        name: "Request Token",
-        description: "The request token for the AWS resource.",
+      state: {
+        name: "Current State",
+        description: "The current state of the resource from AWS",
       },
       resourceIdentifier: {
         name: "Resource Identifier",

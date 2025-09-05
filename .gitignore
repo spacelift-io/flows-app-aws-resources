@@ -140,3 +140,4 @@ vite.config.ts.timestamp-*
 
 # Flows app specific
 bundle.tar.gz
+.claude/
