@@ -2,9 +2,13 @@ import {
   AppBlock,
   EntityInput,
   EntityLifecycleCallbackOutput,
+  EventInput,
+  events,
+  lifecycle,
 } from "@slflows/sdk/v1";
 import { createCloudControlClient } from "../../utils/cloudControl";
 import { GetResourceCommand } from "@aws-sdk/client-cloudcontrol";
+import { deepEqual } from "../../utils/compare";
 
 export const dataSource: AppBlock = {
   name: "Data Source",
@@ -35,6 +39,38 @@ export const dataSource: AppBlock = {
     },
   },
 
+  inputs: {
+    sync: {
+      name: "Sync",
+      description:
+        "Triggers a sync operation to check and refresh resource state",
+      config: {},
+      onEvent: async (_input: EventInput) => {
+        lifecycle.sync();
+      },
+    },
+  },
+
+  outputs: {
+    default: {
+      name: "State Changed",
+      description: "Emitted when the resource state changes",
+      type: {
+        type: "object",
+        properties: {
+          state: {
+            type: "object",
+            description: "The new resource state",
+          },
+          resourceIdentifier: {
+            type: "string",
+            description: "The resource identifier",
+          },
+        },
+      },
+    },
+  },
+
   signals: {
     state: {
       name: "Current State",
@@ -47,6 +83,8 @@ export const dataSource: AppBlock = {
   ): Promise<EntityLifecycleCallbackOutput> => {
     const { app, block } = input;
     const { region, typeName, resourceIdentifier } = block.config;
+    const previousState =
+      (block.lifecycle?.signals?.state as Record<string, any>) || {};
 
     try {
       const client = createCloudControlClient(app, region as string);
@@ -59,6 +97,18 @@ export const dataSource: AppBlock = {
       );
 
       const currentState = JSON.parse(ResourceDescription?.Properties || "{}");
+
+      // Check if state changed and emit output if it did
+      const stateChanged = !deepEqual(currentState, previousState, []);
+      if (stateChanged) {
+        await events.emit(
+          {
+            state: currentState,
+            resourceIdentifier: resourceIdentifier as string,
+          },
+          { outputKey: "default" },
+        );
+      }
 
       return {
         newStatus: "ready",

@@ -1,4 +1,4 @@
-import { AppBlock } from "@slflows/sdk/v1";
+import { AppBlock, EventInput, lifecycle } from "@slflows/sdk/v1";
 import { createCloudControlHandlers } from "../../utils/cloudControl";
 import { getNonUpdatableProperties } from "../../utils/cloudformation";
 
@@ -51,6 +51,42 @@ export const resource: AppBlock = {
     },
   },
 
+  inputs: {
+    sync: {
+      name: "Sync",
+      description:
+        "Triggers a sync operation to check and reconcile resource state",
+      config: {},
+      onEvent: async (_input: EventInput) => {
+        lifecycle.sync();
+      },
+    },
+  },
+
+  outputs: {
+    default: {
+      name: "State Changed",
+      description: "Emitted when the resource state changes",
+      type: {
+        type: "object",
+        properties: {
+          state: {
+            type: "object",
+            description: "The new resource state",
+          },
+          resourceIdentifier: {
+            type: "string",
+            description: "The resource identifier",
+          },
+          drifted: {
+            type: "boolean",
+            description: "Whether the resource has drifted from desired state",
+          },
+        },
+      },
+    },
+  },
+
   signals: {
     state: {
       name: "Current State",
@@ -59,6 +95,10 @@ export const resource: AppBlock = {
     resourceIdentifier: {
       name: "Resource Identifier",
       description: "The unique identifier for the AWS resource",
+    },
+    drifted: {
+      name: "Drifted",
+      description: "Whether the resource has drifted from desired state",
     },
   },
 

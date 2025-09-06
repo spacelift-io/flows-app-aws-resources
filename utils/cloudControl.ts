@@ -2,6 +2,7 @@ import {
   EntityInput,
   EntityLifecycleCallbackOutput,
   kv,
+  events,
 } from "@slflows/sdk/v1";
 import { calculateConfigHash } from "./hash";
 import { generateJsonPatch } from "./patch";
@@ -165,11 +166,28 @@ export function createCloudControlHandlers(
         // Clear internal state from KV and update signals
         await kv.block.delete([REQUEST_TOKEN_KEY]);
 
+        // Emit output if state changed
+        const previousState = (state as Record<string, any>) || {};
+        const stateChanged = !deepEqual(
+          resourceProperties,
+          previousState,
+          nonUpdatablePropertyKeys,
+        );
+
+        if (stateChanged) {
+          await events.emit({
+            state: resourceProperties,
+            resourceIdentifier: Identifier,
+            drifted: false, // Just created/updated, so no drift
+          });
+        }
+
         return {
           newStatus: "ready",
           signalUpdates: {
             state: resourceProperties,
             resourceIdentifier: Identifier,
+            drifted: false,
           },
         };
       }
@@ -228,9 +246,19 @@ export function createCloudControlHandlers(
             nonUpdatablePropertyKeys,
           );
 
+          // Emit output for drift detection
+          await events.emit({
+            state: actualState,
+            resourceIdentifier,
+            drifted: true,
+          });
+
           return {
             newStatus: "ready",
             customStatusDescription: `Drifted (${driftedFields.join(", ")})`,
+            signalUpdates: {
+              drifted: true,
+            },
             // Don't update stored state - keep the original as baseline for drift detection
           };
         }
@@ -251,9 +279,26 @@ export function createCloudControlHandlers(
             value: currentConfigHash,
           });
 
+          // Check if we need to emit output for state change
+          const stateChanged = !deepEqual(
+            actualState,
+            lastKnownState,
+            nonUpdatablePropertyKeys,
+          );
+          if (stateChanged) {
+            await events.emit({
+              state: actualState,
+              resourceIdentifier,
+              drifted: false,
+            });
+          }
+
           return {
             newStatus: "ready",
-            signalUpdates: { state: actualState },
+            signalUpdates: {
+              state: actualState,
+              drifted: false,
+            },
           };
         }
 
@@ -290,9 +335,19 @@ export function createCloudControlHandlers(
 
       // Update stored state even if no changes (for accurate drift detection)
       if (!deepEqual(actualState, lastKnownState, nonUpdatablePropertyKeys)) {
+        // State changed but no drift (probably external non-configuration changes)
+        await events.emit({
+          state: actualState,
+          resourceIdentifier,
+          drifted: false,
+        });
+
         return {
           newStatus: "ready",
-          signalUpdates: { state: actualState },
+          signalUpdates: {
+            state: actualState,
+            drifted: false,
+          },
         };
       }
     }
